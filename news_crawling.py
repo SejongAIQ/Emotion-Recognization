@@ -7,7 +7,7 @@ import os
 from datetime import datetime
 from datetime import timedelta
 
-
+#뉴스 크롤링
 date = (datetime.today()-timedelta(8)).strftime("%Y%m%d")
 page = 1 
 cnt=0
@@ -54,12 +54,7 @@ for i in range(len(str['date'])):
 dataframe=pd.DataFrame(df)
 dataframe.to_csv("C:/Users/82102/OneDrive/바탕 화면/SJU/AI_Quant/news_final.csv",index=False, header=True)
 
-from bs4 import BeautifulSoup
-import requests
-import re
-import pandas as pd
-import os 
-
+#시세 크롤링
 df = pd.DataFrame() 
 lastpage = 26
 url = f"https://finance.naver.com/item/sise_day.naver?code=003490"         
