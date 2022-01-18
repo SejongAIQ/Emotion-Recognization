@@ -87,7 +87,7 @@ def find_text(company_code):
     df=df[["date","title","content"]]   
     df=cleaning("news",df)
     dataframe=pd.DataFrame(df)
-    dataframe.to_csv("C:/Users/82102/OneDrive/바탕 화면/SJU/AI_Quant/update_newscrawling.csv",index=False, header=True)
+    dataframe.to_csv("News_Crawling/NK/update_newscrawling.csv",index=False, header=True)
     
 def price_crawling(company_code):
     df = pd.DataFrame() 
@@ -114,7 +114,7 @@ def price_crawling(company_code):
         #전일비 계산 (+,- 고려 위해)
     df=cleaning("price",df)
     dataframe = pd.DataFrame(df)
-    dataframe.to_csv("C:/Users/82102/OneDrive/바탕 화면/SJU/AI_Quant/update_pricecrawling.csv",header=True,index=False)
+    dataframe.to_csv("News_Crawling/NK/update_pricecrawling.csv",header=True,index=False)
     
 def main():
     company = input("종목 코드 입력: ")        #대한항공 003490 
