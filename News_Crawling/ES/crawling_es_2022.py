@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup              # html 파일 관리 라이브러리
 from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
-import re
+# import re
 
 import urllib3
 urllib3.disable_warnings()
@@ -68,7 +68,7 @@ class Crawling:
         '''
         extract_code() : 특정 종목 Keyword에 해당하는 code 추출하기
             input parameter : (str)keyword
-            output : (int)code
+            output : (str)code
         '''
 
         # [논의] keyword code 가져오기
@@ -84,7 +84,7 @@ class Crawling:
         '''
         code = self.driver.find_element_by_css_selector('#middle > div.h_company > div.wrap_company > div > span.code').text
         
-        return int(code)
+        return code
 
 
     def save_news_url(self, url):
@@ -142,7 +142,9 @@ class Crawling:
         '''
 
         cur_page = 1
-        url = f"https://finance.naver.com/item/news_news.naver?code={code}&page={cur_page}"
+        url = f"https://finance.naver.com/item/news_news.naver?code={code}"
+        self.driver.get(url)
+        self.driver.implicitly_wait(1)
 
         # [확인] 현재 페이지가 안 불러와지나 확인하기 !
         # -> 현재 페이지가 안 불러와진 경우 for page in pages 전에 현재 페이지 크롤링 해야함
@@ -150,7 +152,9 @@ class Crawling:
         while True:
             
             # page bar class 찾기
-            page_bar = self.driver.find_element_by_class_name("Nnavi")[0]
+            page_bar = BeautifulSoup.select(selector='body > div > table.Nnavi > tbody > tr')
+            # page_bar = self.driver.find_element_by_class_name("Nnavi")
+            print(page_bar)
             
             # page 수(a태그) 객체 저장
             pages = page_bar.find_element_by_class_name('a')
@@ -223,14 +227,16 @@ class Crawling:
     def price_data_crawling(self, keyword, code):
         '''
         price_data_crawling() : 특정 종목 시세 데이터 크롤링 함수
-            input parameter : (str)keyword, (int)code
+            input parameter : (str)keyword, (str)code
                 시세 데이터 라벨링 및 전처리를 위한 price_data_preprocessing 호출
             output : (csv)price_raw_df
         '''
 
         # 일별 시세 url
-        url = f"https://finance.naver.com/item/sise_day.naver?code={code}"
         cur_page = 1
+        url = f"https://finance.naver.com/item/sise_day.naver?code={code}&page={cur_page}"
+        self.driver.get(url)
+        self.driver.implicitly_wait(1)
 
         # [확인] 현재 페이지가 안 불러와지나 확인하기 !
         # -> 현재 페이지가 안 불러와진 경우 for page in pages 전에 현재 페이지 크롤링 해야함
@@ -238,11 +244,14 @@ class Crawling:
         while True:
             
             # page bar class 찾기
-            page_bar = self.driver.find_element_by_class_name("Nnavi")[0]
+            page_bar = self.driver.find_element_by_class_name("Nnavi")
             
             # page 수(a태그) 객체 저장
             pages = page_bar.find_element_by_class_name('a')
             now_page = page_bar.find_element_by_class_name('on').text
+
+            print("pages :", pages)
+            print("now page :", now_page)
 
             # 현재 나와있는 페이지 수까지 이동
             for page in pages:
@@ -261,11 +270,18 @@ class Crawling:
                     break
                 elif int(page_num) > int(now_page):
 
-
                     # 한 페이지의 시세 데이터 저장
-                    '''
-                    작성
-                    '''
+                    html = requests.get(url)
+                    price_html = BeautifulSoup(html.text, 'html.parser')
+
+                    # 날짜 및 시세 데이터 크롤링
+                    date = price_html.find("span",class_ = "tah p10 gray03").get_text()
+                    price = price_html.find("span",class_ = 'tah p11').get_text()
+
+                    # crawling data update
+                    crawl_dict = {"data":date, "price":price}
+                    print(crawl_dict) ##
+                    self.price_data = self.price_data.append(crawl_dict, ignore_index=True)
 
                     # 다음 페이지로 넘어가기
                     cur_page += 1
@@ -285,7 +301,7 @@ class Crawling:
         price_df.to_csv(keyword + '_price_raw_data.csv', index = False, head = True)
         
         # price data 전처리 및 라벨화 함수 호출
-        self.price_data_preprocessing(price_df)
+        # self.price_data_preprocessing(price_df)
 
     
 if __name__ == "__main__":
@@ -304,11 +320,14 @@ if __name__ == "__main__":
     info.enter_keyword(keyword)
 
     # keyword에 해당하는 code 추출
+    ##-- NCSOFT의 code는 036570 --##
     code = info.extract_code(keyword)
+    print(code)
 
     # keyword 관련 news 데이터 crawling
-    info.news_crawling(keyword)
+    info.news_crawling(keyword, code)
 
     # keyword 관련 시세 데이터 crawling
-    info.price_data_crawling(keyword)
+    info.price_data_crawling(keyword, code)
+
     
