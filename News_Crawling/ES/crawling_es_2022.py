@@ -1,21 +1,26 @@
 # from typing import Counter 
+
 import pandas as pd          
-import requests                   
+import requests                    
+
 # from datetime import datetime, timedelta        # 날짜/시간 라이브러리
 from bs4 import BeautifulSoup              # html 파일 관리 라이브러리
 from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
 # import re
 
+
 import urllib3
 urllib3.disable_warnings()
 
 class Crawling:
+
     def __init__(self): 
         '''
         __init__() : 초기화 함수
                     chrome webdriver open 및 네이버 금융 사이트 열기
         '''
+
         
         self.options = webdriver.ChromeOptions()
         self.options.add_argument("--no-sandbox")
@@ -223,7 +228,7 @@ class Crawling:
         price_processing = pd.DataFrame(df)
         price_processing.to_csv(keyword+'_price_preprocessing_data.csv', index=False, head=True)
 
-
+        
     def price_data_crawling(self, keyword, code):
         '''
         price_data_crawling() : 특정 종목 시세 데이터 크롤링 함수
@@ -329,5 +334,3 @@ if __name__ == "__main__":
 
     # keyword 관련 시세 데이터 crawling
     info.price_data_crawling(keyword, code)
-
-    
