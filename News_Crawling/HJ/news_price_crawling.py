@@ -72,6 +72,7 @@ class News:
     def find_last_url(self, url):
 
         while True:
+
             # 맨뒤 페이지 html 가져오기 
             url_html = BeautifulSoup(requests.get(url, verify=False, headers = {'User-agent' : 'Mozilla/5.0'}).text,"lxml")
             
@@ -84,7 +85,8 @@ class News:
             else: 
                 href = url_html.select('td.on > a')[0]['href']
                 last_url = f"https://finance.naver.com{href}" 
-                return last_url           
+
+                return last_url
     ## 한 종목의 뉴스 url list 반환 함수 ##
     def read_naver_news(self,code):  
 
@@ -149,8 +151,9 @@ class News:
     ## 섹터별 데이터 로드 함수 ## 
     def load_news_by_sector(self):   
         
-        codes_list = pd.read_csv('./DATA/code_by_Sector.csv', encoding = 'cp949')                                      # 업종 코드 로드
-        
+
+        codes_list = pd.read_csv('./DATA/code_by_Sector.csv',encoding = 'cp949')                                      # 업종 코드 로드
+       
         codes_list = codes_list.dropna()                    # NaN 데이터 삭제 
         codes_list = codes_list.applymap(str)               # 문자열로 형 변환 
 
