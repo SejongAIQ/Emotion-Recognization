@@ -2,6 +2,7 @@ import twitter
 import json
 import csv
 import pandas as pd
+from config import twitter_consumer_key, twitter_consumer_secret, twitter_access_token, twitter_access_secret
 
 
 class Twitter:
@@ -11,16 +12,11 @@ class Twitter:
                     토큰 저장 및 트위터 api 라이브러리 불러오기
         '''
 
-        # 토큰
-        self.twitter_consumer_key = "b4ycyDjRLpEgk9hOqDZDATBAv"
-        self.twitter_consumer_secret = "3mKV79bbIqBt9dm2h5mszocja35D5lu8yEIS7nQhLpt6mxzB6B"  
-        self.twitter_access_token = "1485890023614730242-9YcWGpLCj27itSqYvkQx1lEkVVafe5"
-        self.twitter_access_secret = "55gXs0L5du5u6Sq8StEpQcYsIQqE0VNdq83tSGhJyAd1U"
 
-        self.twitter_api = twitter.Api(consumer_key=self.twitter_consumer_key,
-                                consumer_secret=self.twitter_consumer_secret, 
-                                access_token_key=self.twitter_access_token, 
-                                access_token_secret=self.twitter_access_secret)
+        self.twitter_api = twitter.Api(consumer_key=twitter_consumer_key,
+                                consumer_secret=twitter_consumer_secret, 
+                                access_token_key=twitter_access_token, 
+                                access_token_secret=twitter_access_secret)
 
         # self.tweet_data = pd.DataFrame(columns={"date", "tweet", "tag"})  
         self.tweet_data = pd.DataFrame(columns={"tweet", "tag"})  
