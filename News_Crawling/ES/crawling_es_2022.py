@@ -156,6 +156,7 @@ class Crawling:
 
         while True:
             
+            ## [수정] class이름이 2개 인 것 같다... try except로 시도하기
             # page bar class 찾기
             page_bar = BeautifulSoup.select(selector='body > div > table.Nnavi > tbody > tr')
             # page_bar = self.driver.find_element_by_class_name("Nnavi")
