@@ -1,13 +1,17 @@
 from os import access
+import json
 import twitter
 import tweepy
 
 class Twit:
     def __init__(self):
-        twitter_consumer_key = "5WeckiJu9SOm2mUE0eA390Jhh"
-        twitter_consumer_secret = "baUgTzKWcqqy7X85p66Hek7TCrqhHy4BigOFrQIfgeghaECdPF"
-        twitter_access_token = "1484908717577748483-sIFaOQw4jEwf03wdxi7e8W8D6ZR0ga"
-        twitter_access_secret = "o7yZBafHJK1FV2EhGrWsIZGu3A84bzIV4q3ebPqXIKw87"
+
+        with open('./DATA/config.json','r') as in_file:
+            config = json.load(in_file)
+            twitter_consumer_key = config['twitter_consumer_key']
+            twitter_consumer_secret = config['twitter_consumer_secret']
+            twitter_access_token = config['twitter_access_token']
+            twitter_access_secret = config['twitter_access_secret']
 
         self.twitter_api = twitter.Api(consumer_key = twitter_consumer_key,
                                 consumer_secret = twitter_consumer_secret,
