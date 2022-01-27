@@ -5,7 +5,7 @@ import tweepy
 
 class Twit:
     def __init__(self):
-
+      
         with open('./DATA/config.json','r') as in_file:
             config = json.load(in_file)
             twitter_consumer_key = config['twitter_consumer_key']
