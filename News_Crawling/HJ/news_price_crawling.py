@@ -87,6 +87,7 @@ class News:
                 last_url = f"https://finance.naver.com{href}" 
 
                 return last_url
+
     ## 한 종목의 뉴스 url list 반환 함수 ##
     def read_naver_news(self,code):  
 
@@ -122,10 +123,10 @@ class News:
             return None
     ## 한 종목의 뉴스 데이터 크롤링 함수 ##
     def news_content_crawling(self,code,company):  
-        
+
         df = pd.DataFrame(columns={"date","title","content"})           # df 생성 [ 종목별 뉴스 데이터 저장 ] 
         url_list = news.read_naver_news(code)                           # url_list 로드
-                                            
+                                           
         for i in range(len(url_list)):                                  
             
             url=f"https://finance.naver.com{url_list[i]}"                   # 1개의 url 가져오기 
@@ -150,10 +151,8 @@ class News:
 
     ## 섹터별 데이터 로드 함수 ## 
     def load_news_by_sector(self):   
-        
 
-        codes_list = pd.read_csv('./DATA/code_by_Sector.csv',encoding = 'cp949')                                      # 업종 코드 로드
-       
+        codes_list = pd.read_csv('C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/code_by_Sector.csv', encoding = 'cp949')                                      # 업종 코드 로드
         codes_list = codes_list.dropna()                    # NaN 데이터 삭제 
         codes_list = codes_list.applymap(str)               # 문자열로 형 변환 
 
@@ -162,6 +161,8 @@ class News:
             print(f"[{codes_list['code'][i]}] Start news data Crawling" )
             news.news_content_crawling(codes_list['code'][i].zfill(6),codes_list['company'][i])      # 업종 코드 별, 뉴스 데이터 크롤링 
 
+    def example(self):
+        self.news_content_crawling('009150','삼성전기')
 
 if __name__ == "__main__":
     news = News()
