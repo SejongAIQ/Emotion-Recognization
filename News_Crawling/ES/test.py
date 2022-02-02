@@ -1,7 +1,9 @@
 import pandas as pd
 from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
-from datetime import datetime # 현재 날짜를 가져오기 위한 라이브러리
+from datetime import datetime, timedelta # 현재 날짜를 가져오기 위한 라이브러리
+import re
+import time
 
 class DailySearchVolume:
 
@@ -62,11 +64,13 @@ class DailySearchVolume:
 
     def make_valid_date(self, year, month, day):
         '''
-        make_valid_date() : 기간 검색에 유효한 날짜 string 만들기
+        make_valid_date() : 기간 검색을 위한 유효한 날짜 string 생성
             input parameter : (int)year, (int)month, (int)day
             output : (str) date - 형식 : month/day/year
+                    ex) 2020/01/14 => 14/1/2020
         '''
         return str(month)+'/'+str(day)+'/'+str(year)
+
 
     def save_format_date(self, year, month, day):
         '''
@@ -84,6 +88,19 @@ class DailySearchVolume:
                 return str(year)+'.'+str(month)+'.0'+str(day)
             else:
                 return str(year)+'.'+str(month)+'.'+str(day)
+
+
+    def update_date(self, year, month, day):
+        '''
+        update_date() : 조회 날짜 update 함수
+            input parameter : (int)year, (int)month, (int)day
+            output : update된 날짜
+        '''
+        
+        date = datetime(year, month, day, 0, 0, 0)
+        date = date + timedelta(days=1)
+
+        return date.year, date.month, date.day
 
 
     def search_volume_crawling(self, keyword):  
@@ -104,9 +121,10 @@ class DailySearchVolume:
 
 
         year = 2022
-        month = 2
-        day = 1
+        month = 1
+        day = 31
 
+        '''
         date = self.make_valid_date(year,month,day)
         print('valid date: ',date)
 
@@ -116,9 +134,7 @@ class DailySearchVolume:
         self.driver.implicitly_wait(3)
             
         # '모든 날짜' 버튼 클릭 - 일별 날짜를 가져오기 위함
-        '''
-        [수정] 왜 안댐?!
-        '''
+
         # self.driver.find_element_by_xpath('//*[@id="hdtbMenus"]/span[2]/g-popup/div[1]').click()
         self.driver.find_element_by_xpath('//*[@id="hdtbMenus"]/span[2]/g-popup/div[1]').send_keys(Keys.ENTER)
         self.driver.implicitly_wait(3)
@@ -157,17 +173,92 @@ class DailySearchVolume:
         self.daily_search_volume = self.daily_search_volume.append(crawl_dict, ignore_index=True)
         self.driver.implicitly_wait(3)
         self.driver.implicitly_wait(3)
+        '''
 
-        # 날짜 조회 초기화
+        date = self.make_valid_date(year,month,day)
+        print("\nSearch date :", date)
+
+        # 도구 버튼 클릭
+        self.driver.find_element_by_xpath('//*[@id="hdtb-tls"]').send_keys(Keys.ENTER)
+        self.driver.implicitly_wait(3)
+
+        # '모든 날짜' 버튼 클릭 - 일별 날짜를 가져오기 위함
+        # self.driver.find_element_by_xpath('//*[@id="ow67"]/div/div/div/div').click()
+        self.driver.find_element_by_xpath('//*[@id="hdtbMenus"]/span[2]/g-popup/div[1]').send_keys(Keys.ENTER)
+        self.driver.implicitly_wait(3)
+
+        # '모든 날짜'의 '기간 설정' 클릭
+        self.driver.find_element_by_xpath('//*[@id="lb"]/div/g-menu/g-menu-item[7]').click()
+        self.driver.implicitly_wait(3)
+
+        # '시작일' 입력
+        start_date_btn = self.driver.find_element_by_xpath('//*[@id="OouJcb"]')
+        start_date_btn.send_keys(date)
+
+        # '종료일' 입력
+        end_date_btn = self.driver.find_element_by_xpath('//*[@id="rzG2be"]')
+        end_date_btn.send_keys(date)    
+
+        # 실행
+        search_btn = self.driver.find_element_by_xpath('//*[@id="T3kYXe"]/g-button')
+        search_btn.send_keys(Keys.ENTER) 
+        self.driver.implicitly_wait(5)
+
+        # 도구 버튼 클릭 - 조회하기 위함
+        self.driver.find_element_by_xpath('//*[@id="hdtb-tls"]').send_keys(Keys.ENTER)
+        time.sleep(4)
+
+
+        # volume = self.driver.find_element_by_xpath('//*[@id="appbar"]').text
+        # print('If Else')
+        # print(volume)
+        # if len(volume) == 0:
+        #     print('No search Volume!')
+        #     volume = 0
+        # else:
+        #     volume = volume[:volume.index('개')]
+        #     # print(volume)
+        #     volume = re.sub(r'[^0-9]', '', volume)
+        #     volume = int(volume)
+        # print("%s's Search Volume is %d"%(date, volume))
+        
+        # # 일별 검색량 crawling
+        # print('Try except')
+        try:
+            volume = self.driver.find_element_by_xpath('//*[@id="appbar"]').text
+            # print(volume)
+            volume = volume[:volume.index('개')]
+            # print(volume)
+            volume = re.sub(r'[^0-9]', '', volume)
+            volume = int(volume)
+            print("%s's Search Volume is %d"%(date, volume))
+        except:
+            print('No search Volume!')
+            volume = 0
+            
+        # crawling date update
+        save_date = self.save_format_date(year, month, day)
+        print('---Total result---')
+        print('date: ', save_date)
+        print('Volume: ', volume)
+        crawl_dict = {"date":save_date, "search_volume":volume}
+        self.daily_search_volume = self.daily_search_volume.append(crawl_dict, ignore_index=True)
+       
+
+       # 날짜 조회 초기화
+        '''
         self.driver.find_element_by_xpath('//*[@id="hdtb-tls"]').click()
         self.driver.find_element_by_xpath('//*[@id="hdtbMenus"]/span[3]').send_keys(Keys.ENTER)
         self.driver.implicitly_wait(3)
-            
-
-
+        '''
+       
         # crawling data csv 파일로 저장  
         news_df = pd.DataFrame(self.daily_search_volume)
         news_df.to_csv(keyword + "_daily_search_volume_data.csv", index = False, header = True)
+
+        time.sleep(5)
+        self.driver.back()
+        self.driver.implicitly_wait(3)
 
 
     
