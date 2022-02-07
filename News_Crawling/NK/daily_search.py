@@ -5,6 +5,7 @@ from selenium.webdriver.common.keys import Keys
 import re
 import pandas as pd
 import time
+import urllib.request
 
 class Google:
     def __init__(self):
@@ -55,11 +56,9 @@ class Google:
         
         time.sleep(1)
         
-        #시작일 설정
         start = self.driver.find_element_by_xpath("//*[@id='OouJcb']")
         start.send_keys(str(i)+"/"+str(j)+"/2021")
                     
-        #종료일 설정
         end = self.driver.find_element_by_xpath("//*[@id='rzG2be']")
         end.send_keys(str(i)+"/"+str(j)+"/2021")
                     
@@ -67,11 +66,13 @@ class Google:
         play = self.driver.find_element_by_xpath("//*[@id='T3kYXe']/g-button")
         play.click()
 
+        time.sleep(1)
+        
         #도구 클릭
         menu=self.driver.find_element_by_id('hdtb-tls')
         menu.click()
         
-        time.sleep(1)
+        time.sleep(2)
         
         #검색결과 개수 가져오기
         '''
@@ -87,7 +88,7 @@ class Google:
         except:
             result='0'     
                 
-        time.sleep(1)
+        time.sleep(2)
         
         #뒤로가기
         self.driver.back()
@@ -95,7 +96,6 @@ class Google:
         return result
 
     def content(self):
-
         # 구글 대한항공 겁색
         self.search_keyword()  
         
@@ -121,8 +121,16 @@ class Google:
                     df=df.append(data_list,ignore_index=True)
                     
         dataframe=pd.DataFrame(df)
-        dataframe.to_csv("Search_Volume.csv",index=False, header=True)
+        dataframe.to_csv("daily_search.csv",index=False, header=True)
 
 if __name__ == "__main__":
-    google = Google()    
+    google = Google()
+    
+    '''
+    print("시작일 입력 : ####.##.## ")
+    start_date=input()
+    print("종료일 입력 : ####.##.## ")   
+    end_date=input()
+    '''
+    
     google.content()
