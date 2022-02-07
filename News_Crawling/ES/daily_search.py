@@ -3,7 +3,9 @@ from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
 from datetime import datetime, timedelta # 현재 날짜를 가져오기 위한 라이브러리
 import re
+
 import time
+
 
 class DailySearchVolume:
 
@@ -21,10 +23,12 @@ class DailySearchVolume:
         # chrome 가상 driver 열기
         self.driver = webdriver.Chrome('/Users/eesun/Downloads/chromedriver', options = self.options)
         self.driver.implicitly_wait(1)
+        
         # self.driver.maximize_window() # chrome 최대창 사용
 
         # 네이버 금융 사이트
         self.driver.get("https://google.com/")
+
         self.driver.implicitly_wait(1)
 
         # dataframe 및 현재 날짜 초기화
@@ -174,6 +178,7 @@ class DailySearchVolume:
             self.driver.find_element_by_xpath('//*[@id="lb"]/div/g-menu/g-menu-item[7]').click()
             self.driver.implicitly_wait(2)
 
+
             # '시작일' 입력
             start_date_btn = self.driver.find_element_by_xpath('//*[@id="OouJcb"]')
             start_date_btn.send_keys(date)
@@ -185,6 +190,7 @@ class DailySearchVolume:
             # 실행
             search_btn = self.driver.find_element_by_xpath('//*[@id="T3kYXe"]/g-button')
             search_btn.send_keys(Keys.ENTER) 
+            
             self.driver.implicitly_wait(3)
 
             # 도구 버튼 클릭 - 조회하기 위함
@@ -197,10 +203,12 @@ class DailySearchVolume:
             try:
                 # volume = self.driver.find_element_by_css_selector('#result-stats').text
                 volume = self.driver.find_element_by_xpath('//*[@id="appbar"]').text
+
                 # print(volume)
                 volume = volume[:volume.index('개')]
                 # print(volume)
                 volume = re.sub(r'[^0-9]', '', volume)
+
                 volume = int(volume)
                 print("%s's Search Volume is %d"%(date, volume))
             except:
@@ -209,7 +217,9 @@ class DailySearchVolume:
             
             # crawling date update
             save_date = self.save_format_date(year, month, day)
+
             print('---Total result---')
+
             print('date: ', save_date)
             print('Volume: ', volume)
             crawl_dict = {"date":save_date, "search_volume":volume}
@@ -228,6 +238,7 @@ class DailySearchVolume:
             self.driver.back()
             # self.driver.find_element_by_xpath('//*[@id="hdtbMenus"]/span[3]').click()
             self.driver.implicitly_wait(2)
+
 
         # crawling data csv 파일로 저장  
         news_df = pd.DataFrame(self.daily_search_volume)

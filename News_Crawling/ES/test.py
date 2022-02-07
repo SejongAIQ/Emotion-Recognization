@@ -1,9 +1,11 @@
 import pandas as pd
 from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
+
 from datetime import datetime, timedelta # 현재 날짜를 가져오기 위한 라이브러리
 import re
 import time
+
 
 class DailySearchVolume:
 
@@ -64,13 +66,13 @@ class DailySearchVolume:
 
     def make_valid_date(self, year, month, day):
         '''
+
         make_valid_date() : 기간 검색을 위한 유효한 날짜 string 생성
             input parameter : (int)year, (int)month, (int)day
             output : (str) date - 형식 : month/day/year
                     ex) 2020/01/14 => 14/1/2020
         '''
         return str(month)+'/'+str(day)+'/'+str(year)
-
 
     def save_format_date(self, year, month, day):
         '''
@@ -90,6 +92,7 @@ class DailySearchVolume:
                 return str(year)+'.'+str(month)+'.'+str(day)
 
 
+
     def update_date(self, year, month, day):
         '''
         update_date() : 조회 날짜 update 함수
@@ -101,7 +104,6 @@ class DailySearchVolume:
         date = date + timedelta(days=1)
 
         return date.year, date.month, date.day
-
 
     def search_volume_crawling(self, keyword):  
         '''
