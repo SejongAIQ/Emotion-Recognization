@@ -6,6 +6,8 @@ import re
 
 import time
 
+from sqlalchemy import DDL
+
 
 class DailySearchVolume:
 
@@ -106,6 +108,31 @@ class DailySearchVolume:
 
         return date.year, date.month, date.day
 
+    def crawl_volume_data(self, date):
+        '''
+        crawl_volume_data() : 일별 검색량 crawling 함수
+            input parameter : (str)date
+            output : (int)volume
+        '''
+
+        # 일별 검색량 crawling
+        try:
+            # volume = self.driver.find_element_by_css_selector('#result-stats').text
+            volume = self.driver.find_element_by_xpath('//*[@id="appbar"]').text
+
+            # print(volume)
+            volume = volume[:volume.index('개')]
+            # print(volume)
+            volume = re.sub(r'[^0-9]', '', volume)
+
+            volume = int(volume)
+            print("%s's Search Volume is %d"%(date, volume))
+        except:
+            print('No search Volume!')
+            volume = 0
+
+        return volume
+
 
     def search_volume_crawling(self, keyword):  
         '''
@@ -155,11 +182,14 @@ class DailySearchVolume:
 
         while True:
             '''
-            [수정] 1. 데이터가 잘 못 크롤링 되고 있는 것 같다 ..!
-                    => 각 action간 충분한 time.sleep 필요
-                    2. 2021.02.19부터 오류 
-                        => 매크로로 인해 google에서 비정상적인 traffic으로 간주하여 막는 것으로 보임
-                즉, 두 오류 모두 각 actiin간 충분한 time.sleep가 있으면 오류가 발생하지 않음.
+            [수정 - 완료] 1. 데이터가 잘 못 크롤링 되고 있는 것 같다 ..!
+                            => 각 action간 충분한 time.sleep 필요
+                        2. 2021.02.19부터 오류 
+                            => 매크로로 인해 google에서 비정상적인 traffic으로 간주하여 막는 것으로 보임
+                    [해결] 두 오류 모두 각 actiin간 충분한 time.sleep가 있으면 오류가 발생하지 않음.
+            
+            [수정]  1. volume data가 너무 적은 경우 "생략된 결과 보기"란이 뜸 
+                        - 생략된 결과가 모두 출력된 volume양을 가져오도록 예외처리
             '''
 
             date = self.make_valid_date(year,month,day)
@@ -178,7 +208,6 @@ class DailySearchVolume:
             self.driver.find_element_by_xpath('//*[@id="lb"]/div/g-menu/g-menu-item[7]').click()
             self.driver.implicitly_wait(2)
 
-
             # '시작일' 입력
             start_date_btn = self.driver.find_element_by_xpath('//*[@id="OouJcb"]')
             start_date_btn.send_keys(date)
@@ -190,15 +219,43 @@ class DailySearchVolume:
             # 실행
             search_btn = self.driver.find_element_by_xpath('//*[@id="T3kYXe"]/g-button')
             search_btn.send_keys(Keys.ENTER) 
-            
-            self.driver.implicitly_wait(3)
+            time.sleep(1)
 
             # 도구 버튼 클릭 - 조회하기 위함
+            time.sleep(2)
             self.driver.find_element_by_xpath('//*[@id="hdtb-tls"]').send_keys(Keys.ENTER)
             # self.driver.implicitly_wait(10)
             time.sleep(2)
 
+            '''
+            [예외 처리] "생략된 결과 모두 보기" 란이 있으면 클릭
+            '''
+            try:
+                # '생략된 결과 모두 보기' 클릭
+                # self.driver.find_elements_by_css_selector('#ofr')
+                # self.driver.find_element_by_xpath('//*[@id="ofr"]')
+                self.driver.find_element_by_xpath('//*[@id="botstuff"]/div/div[2]/div')
+                print("SKIP CONTENT!")
+                self.driver.find_element_by_xpath('//*[@id="ofr"]/i/a').send_keys(Keys.ENTER)
+                time.sleep(3)
 
+                # 도구 버튼 클릭 - 조회하기 위함
+                self.driver.find_element_by_xpath('//*[@id="hdtb-tls"]').send_keys(Keys.ENTER)
+                time.sleep(2)
+
+                time.sleep(1)
+                volume = self.crawl_volume_data(date)
+                time.sleep(2)
+
+                self.driver.back()
+                time.sleep(2)
+            except:
+                time.sleep(1)
+                volume = self.crawl_volume_data(date)
+                time.sleep(1)
+
+
+            '''
             # 일별 검색량 crawling
             try:
                 # volume = self.driver.find_element_by_css_selector('#result-stats').text
@@ -214,7 +271,8 @@ class DailySearchVolume:
             except:
                 print('No search Volume!')
                 volume = 0
-            
+            '''
+
             # crawling date update
             save_date = self.save_format_date(year, month, day)
 
@@ -241,8 +299,9 @@ class DailySearchVolume:
 
 
         # crawling data csv 파일로 저장  
+
         news_df = pd.DataFrame(self.daily_search_volume)
-        news_df.to_csv(keyword + "_daily_search_volume_data.csv", index = False, header = True)
+        news_df.to_csv("["+keyword+"]daily_search_volume_data("+start+" ~ "+end+").csv", index = False, header = True)
 
 
     
@@ -259,6 +318,7 @@ if __name__ == "__main__":
     추후에 keyword가 담겨있는 파일을 열어 Keyword 하나씩 받아오는 형식으로 진행
     '''
     keyword = 'NCSOFT'
+    keyword += ' 기업'
     crawl.enter_keyword(keyword)
 
     # keyword 일별 검색량 crawling
