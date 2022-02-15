@@ -209,7 +209,7 @@ class Google:
                     df=df.append(data_list,ignore_index=True)
                     
         dataframe=pd.DataFrame(df)
-        dataframe.to_csv("C:/Users/82102/OneDrive/바탕 화면/SJU/AI_Quant/daily_search.csv",index=False, header=True)
+        dataframe.to_csv("daily_search.csv",index=False, header=True)
 
 if __name__ == "__main__":
     google = Google()
