@@ -73,6 +73,7 @@ def cleaning_text(df):
     while ('.' in df):
         df = df.replace('.', '')
     df = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ!』\\‘|\(\)\[\]\<\>`\'…》]',' ', df)
+    #df = re.sub('대한항공',' ', df)
     df = ' '.join(df.split()).rstrip()
     
     return df
