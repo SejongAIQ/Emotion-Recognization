@@ -1,3 +1,7 @@
+'''
+    Twitter :: 특정 키워드 관련 트윗 크롤링
+'''
+
 import twitter
 import json
 import csv

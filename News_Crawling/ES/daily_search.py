@@ -1,3 +1,8 @@
+'''
+    DailySearchVolume :: 키워드 일별 검색량 크롤링
+'''
+
+
 import pandas as pd
 from selenium import webdriver             # selenium module import
 from selenium.webdriver.common.keys import Keys
