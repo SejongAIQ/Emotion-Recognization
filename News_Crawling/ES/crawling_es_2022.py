@@ -1,3 +1,8 @@
+'''
+    Crawling :: [네이버 금융] 사이트에서 뉴스 및 시세 데이터 크롤링
+'''
+
+
 # from typing import Counter 
 
 import pandas as pd          
