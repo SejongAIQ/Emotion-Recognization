@@ -5,10 +5,17 @@ from selenium.webdriver.common.keys import Keys
 import re
 import pandas as pd
 import time
-import urllib.request
+import requests
+
+import urllib3
+urllib3.disable_warnings()
 
 class Google:
     def __init__(self):
+        '''
+        __init__() : 초기화 함수
+                    chrome webdriver open 및 구글 열기
+        '''
 
         # setting 크롤링 시 기기차단 우회 headers 옵션의 User-Agent 값을 커스터마이징 하여 보내도록 한다.
         self.options = webdriver.ChromeOptions()
@@ -20,9 +27,17 @@ class Google:
         #self.driver.maximize_window()  # window size 지정 (maximize)
         
     def __del__(self):
+        '''
+        __del__() : 소멸자 함수
+                    crawling 작업이 끝난 후 chrome webdriver 닫기
+        '''
+
         self.driver.close()
         
     def search_keyword(self):
+        '''
+        search_keyword() : 종목 keyword로 google 검색창에 검색하기
+        '''
 
         ## 구글 홈 ##
         self.driver.get("https://www.google.com")
@@ -35,67 +50,140 @@ class Google:
         company.send_keys(Keys.RETURN)
         
     def get_content(self,i,j):
-        
-        time.sleep(1)
-        
+        '''
+        get_content() 함수: 일별 구글 검색결과 crawling 함수
+                input parameter : (int)i,j
+                output : (str)result
+        '''
+        k=0
+            
         #도구 클릭
         menu=self.driver.find_element_by_id('hdtb-tls')
         menu.click()
-        
-        time.sleep(1)
-        
+        time.sleep(2)
+            
         #모든날짜 클릭
         spread_menu = self.driver.find_elements_by_class_name("KTBKoe")
         spread_menu[1].click()
-        
-        time.sleep(1)
-        
+        time.sleep(2)
+
         #기간설정 클릭
         set_time = self.driver.find_element_by_xpath("//*[@id='lb']/div/g-menu/g-menu-item[7]")
         set_time.click()
-        
-        time.sleep(1)
-        
+        time.sleep(2)
+
         start = self.driver.find_element_by_xpath("//*[@id='OouJcb']")
         start.send_keys(str(i)+"/"+str(j)+"/2021")
-                    
+
         end = self.driver.find_element_by_xpath("//*[@id='rzG2be']")
         end.send_keys(str(i)+"/"+str(j)+"/2021")
-                    
+            
+        time.sleep(2)
+
         #실행버튼 클릭
         play = self.driver.find_element_by_xpath("//*[@id='T3kYXe']/g-button")
         play.click()
 
-        time.sleep(1)
-        
+        time.sleep(2)
+
         #도구 클릭
         menu=self.driver.find_element_by_id('hdtb-tls')
         menu.click()
-        
+
         time.sleep(2)
-        
-        #검색결과 개수 가져오기
-        '''
-        오류 . 일치하는 검색결과가 없습니다
-        예외처리 -> try except
-        '''
+            
+        #검색결과
         try:
             result = self.driver.find_element_by_id("result-stats").text
             result=result[:result.find('개')]
-            print("date: 2021."+str(i)+"."+str(j)+ " Search : "+result)
+            #re.sub 검색결과만 남기고 제거
+            result = re.sub(r'[^0-9]', '', result)
+        except:
+            result='0'  
+            
+        time.sleep(2)
+            
+        '''
+        "원하시면 생략된 결과를 포함하여 다시 검색하실 수 있습니다." 링크 이동으로 인한
+        검색결과 불일치 . 해당 문구는 마지막 페이지까지 가야 나온다 
+            
+        해당 페이지가 마지막 페이지가 아니라면 마지막 페이지로 이동
+        생략된 결과를 포함하여 다시 검색 링크 있다면 해당 링크로 이동
+            
+        1페이지에서 나온 검색결과와 마지막페이지에서 나온 검색결과 다르다 
+        마지막 페이지의 검색결과를 가져와야 정확
+        '''
+            
+        for i in range(2):
+            #1. 마지막 페이지?
+            while True:  
+                page_html = self.driver.page_source
+                soup = BeautifulSoup(page_html, 'html.parser')
+                last=soup.select_one('#pnnext')
+                if last==None:
+                    break
+                a_tag =soup.select_one('#pnnext')
+                url="https://www.google.com"+a_tag['href']
+                self.driver.get(url)
+                k+=1
+
+            time.sleep(2)
+
+            #2. 생략된 검색결과?
+            while True:
+                page_html = self.driver.page_source
+                soup = BeautifulSoup(page_html, 'html.parser')
+                more = soup.select_one('#ofr > i > a')
+                if more == None:
+                    break
+                a_tag =soup.select_one('#ofr > i > a')
+                url="https://www.google.com"+a_tag['href']
+                self.driver.get(url)
+                k+=1
+            
+        '''
+        일치하는 검색결과가 없습니다 -> 검색결과 0
+        예외처리 -> try except
+        '''
+            
+        time.sleep(2)
+            
+        if k>=1:
+            #도구 클릭
+            menu=self.driver.find_element_by_id('hdtb-tls')
+            menu.click()
+            time.sleep(2)
+        
+        try:
+            #검색결과 가져오기
+            result = self.driver.find_element_by_id("result-stats").text
+            result=result[:result.find('개')]
             #re.sub 검색량만 남기고 제거
             result = re.sub(r'[^0-9]', '', result)
         except:
             result='0'     
-                
+            
+        print("date : 2021."+str(i)+"."+str(j)+"Search"+str(result))
         time.sleep(2)
-        
+
+        for i in range(k):
+            #뒤로가기
+            self.driver.back()
+            time.sleep(2)
+                    
+        time.sleep(2)
+            
         #뒤로가기
         self.driver.back()
-        
+            
         return result
+        
 
     def content(self):
+        '''
+        content() 함수: 날짜 지정 및 csv파일 생성
+        '''
+
         # 구글 대한항공 겁색
         self.search_keyword()  
         
@@ -125,12 +213,4 @@ class Google:
 
 if __name__ == "__main__":
     google = Google()
-    
-    '''
-    print("시작일 입력 : ####.##.## ")
-    start_date=input()
-    print("종료일 입력 : ####.##.## ")   
-    end_date=input()
-    '''
-    
     google.content()
