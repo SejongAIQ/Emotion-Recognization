@@ -73,7 +73,7 @@ def cleaning_text(df):
     while ('.' in df):
         df = df.replace('.', '')
     df = re.sub('[-=+,#/\?:^$.@*\"※~&%ㆍ!』\\‘|\(\)\[\]\<\>`\'…》]',' ', df)
-    #df = re.sub('대한항공',' ', df)
+    df = re.sub('대한항공',' ', df)
     df = ' '.join(df.split()).rstrip()
     
     return df
@@ -144,7 +144,7 @@ def find_text(company_code):
     df=cleaning("news",df)
     
     dataframe=pd.DataFrame(df)
-    dataframe.to_csv("C:/Users/82102/OneDrive/문서/Emotion-Recognization-fork/News_Crawling/NK/news_crawling.csv",index=False, header=True)
+    dataframe.to_csv("C:/Users/82102/OneDrive/문서/Nakyung-Emotion-Recognization/News_Crawling/NK/news_crawling.csv",index=False, header=True)
     
     return dataframe
     
