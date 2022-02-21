@@ -1,5 +1,4 @@
 ## Module import 
-from ast import keyword
 import pandas as pd
 import numpy as np
 from konlpy.tag import Mecab, Okt
