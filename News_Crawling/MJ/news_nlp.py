@@ -74,35 +74,40 @@ class NLP:
         f.close()
         # print(titles_df.head(10)) # 빈도수 상위 10개 출력
 
-        # #-------------------------------------------------------#
+        #-------------------------------------------------------#
 
-        # # 뉴스 '내용' 합치고 문자영 cleaning
-        # contents = self.merge_news(data['contents']) 
-        # contents = self.string_cleaning(contents)
+        # 뉴스 '내용' 합치고 문자영 cleaning
+        contents = self.merge_news(data['contents']) 
+        contents = self.string_cleaning(contents)
 
-        # contents = mecab.nouns(contents)
-        # contents_del_stop = [t for t in contents if t not in stopword]
-        # contents_del_stop = [t for t in contents_del_stop if len(t) > 1]
+        contents = mecab.pos(contents)
 
+        contents_tmp = []
+        for t in titles:
+            if t[1].startswith(('V', 'N')):
+                contents_tmp.append(t[0])
+
+        contents_del_stop = [t for t in contents_tmp if t not in stopword]
+        contents_del_stop = [t for t in contents_del_stop if len(t) > 1]
+
+        # print(len(contents_del_stop), len(set(contents_del_stop))) # 58293 / 중복 제외 단어 개수 : 3139
         
-        # # print(len(contents_del_stop), len(set(contents_del_stop))) # 58293 / 중복 제외 단어 개수 : 3139
-        
-        # # 기사 내용에서 명사만 추출 
-        # contents_df = pd.Series(contents_del_stop) 
-        # # [ 단어, 빈도수 ] 구성으로 Dataframe 화
-        # contents_df = contents_df.value_counts().rename_axis('word').reset_index(name='count') 
+        # 기사 내용에서 명사만 추출 
+        contents_df = pd.Series(contents_del_stop) 
+        # [ 단어, 빈도수 ] 구성으로 Dataframe 화
+        contents_df = contents_df.value_counts().rename_axis('word').reset_index(name='count') 
 
-        # # 빈도수 상위 25% 단어 추출
-        # num1to4 = int(len(set(contents_del_stop)) / 4)
-        # contents_df_make_stopword = list(contents_df['word'][:num1to4])
+        # 빈도수 상위 25% 단어 추출
+        num1to4 = int(len(set(contents_del_stop)) / 4)
+        contents_df_make_stopword = list(contents_df['word'][:num1to4])
 
-        # f = open(f'./Data/{KEYWORD}_contents.txt', 'w')
+        f = open(f'./Data/{KEYWORD}_contents.txt', 'w')
 
-        # for word in contents_df_make_stopword:
-        #     f.write(word + '\n')
+        for word in contents_df_make_stopword:
+            f.write(word + '\n')
 
-        # f.close()
-        # # print(contents_df.head(10))
+        f.close()
+        # print(contents_df.head(10))
 
 
 if __name__ == '__main__':
