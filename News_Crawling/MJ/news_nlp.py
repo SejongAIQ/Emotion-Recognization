@@ -1,9 +1,11 @@
 ## Module import 
+from ast import keyword
 import pandas as pd
 import numpy as np
 from konlpy.tag import Mecab, Okt
 import re
 from make_stopword import words as stopword
+from itertools import chain
 
 class NLP:
 
@@ -23,6 +25,12 @@ class NLP:
         return result
     
     def merge_news(self, title_list):
+        '''
+            - merge_news() : csv에 있는 모든 문자열을 하나로 만드는 함수
+
+                - input parameter : (array)title_list 
+                - output : (str)string
+        '''
         titles = ''
         for t in title_list:
             titles += t
@@ -38,63 +46,80 @@ class NLP:
         titles = self.merge_news(data['title'])
         titles = self.string_cleaning(titles)
 
-        titles = mecab.nouns(titles)
-        titles_ex_stop = [t for t in titles if t not in stopword]
-        ex_stop = [t for t in titles if t in stopword]
+        titles = mecab.pos(titles)
+        titles_tmp = []
+        for t in titles:
+            if t[1].startswith(('V', 'N')):
+                titles_tmp.append(t[0])
 
-        print(len(titles), len(set(titles))) # 2608 / 중복 제외 단어 개수 : 483
-        print(len(titles_ex_stop), len(set(titles_ex_stop))) # 2461 / 중복 제외 단어 개수 : 463
+        titles_del_stop = [t for t in titles_tmp if t not in stopword]
+        titles_del_stop = [t for t in titles_del_stop if len(t) > 1]
 
-        titles_df = pd.Series() # 기사 제목에서 명사만 추출
-        print(titles_df.value_counts().head(10)) # 빈도수 상위 10개 출력
+        # print(len(titles), len(set(titles))) # 2608 / 중복 제외 단어 개수 : 483
 
-        # 뉴스 '내용' 합치고 문자영 cleaning
-        contents = self.merge_news(data['contents']) 
-        contents = self.string_cleaning(contents)
+        # 기사 제목에서 명사만 추출
+        titles_df = pd.Series(titles_del_stop) 
+        # [ 단어, 빈도수 ] 구성으로 Dataframe 화
+        titles_df = titles_df.value_counts().rename_axis('word').reset_index(name='count')
 
-        contents_df = pd.Series(mecab.nouns(contents)) # 기사 내용에서 명사만 추출
+        # 빈도수 상위 25% 단어 추출
+        num1to4 = int(len(set(titles_del_stop)) / 4)
+        title_df_make_stopword = list(titles_df['word'][:num1to4])
 
-        # [ 단어, 빈도수 ] 구성으로 Dataframe화
-        contents_df = contents_df.value_counts().rename_axis('word').reset_index(name='count') 
-        # contents_df = pd.DataFrame(contents_df.value_counts(), columns={'word', 'count'})
+        f = open(f'./Data/{KEYWORD}_title.txt', 'w')
 
-        print(contents_df.head(10))
+        for word in title_df_make_stopword:
+            f.write(word + '\n')
 
-        # unique_word = contents_df.unique()
-        # for i in unique_word:
-        #     print(i, sep=',')
+        f.close()
+        # print(titles_df.head(10)) # 빈도수 상위 10개 출력
 
-    def okt_news(self, data):
+        # #-------------------------------------------------------#
+
+        # # 뉴스 '내용' 합치고 문자영 cleaning
+        # contents = self.merge_news(data['contents']) 
+        # contents = self.string_cleaning(contents)
+
+        # contents = mecab.nouns(contents)
+        # contents_del_stop = [t for t in contents if t not in stopword]
+        # contents_del_stop = [t for t in contents_del_stop if len(t) > 1]
+
         
-        # 형태소 분석기 불러오기
-        okt = Okt()
+        # # print(len(contents_del_stop), len(set(contents_del_stop))) # 58293 / 중복 제외 단어 개수 : 3139
+        
+        # # 기사 내용에서 명사만 추출 
+        # contents_df = pd.Series(contents_del_stop) 
+        # # [ 단어, 빈도수 ] 구성으로 Dataframe 화
+        # contents_df = contents_df.value_counts().rename_axis('word').reset_index(name='count') 
 
-        # 뉴스 '제목' 합치고 문자열 cleaning
-        titles = self.merge_news(data['title'])
-        titles = self.string_cleaning(titles)
+        # # 빈도수 상위 25% 단어 추출
+        # num1to4 = int(len(set(contents_del_stop)) / 4)
+        # contents_df_make_stopword = list(contents_df['word'][:num1to4])
 
-        titles_df = pd.Series(okt.phrases(titles))
-        # print(titles_df.value_counts().head(10))
+        # f = open(f'./Data/{KEYWORD}_contents.txt', 'w')
 
-        # 뉴스 '내용' 합치고 문자영 cleaning
-        contents = self.merge_news(data['contents']) 
-        contents = self.string_cleaning(contents)
+        # for word in contents_df_make_stopword:
+        #     f.write(word + '\n')
 
-        contents_df = pd.Series(okt.phrases(contents)) # 기사 내용에서 명사만 추출
+        # f.close()
+        # # print(contents_df.head(10))
 
-        # [ 단어, 빈도수 ] 구성으로 Dataframe화
-        contents_df = contents_df.value_counts().rename_axis('word').reset_index(name='count') 
-
-        print(contents_df.head(10))
 
 if __name__ == '__main__':
 
     nlp = NLP()
 
     data = pd.read_csv('./Data/news_crawling.csv')
+    KEYWORD = 'SD바이오센서'
+    
+
+    sample = ['에스디', '바이오', '센서', '에스디바이오센서', 'SD바이오센서', '에스', '디', '만', '억', '조']
+    for s in sample:
+        stopword.append(s)
 
     nlp.mecab_news(data)
-    # nlp.okt_news(data)
+
+
 
 
 
