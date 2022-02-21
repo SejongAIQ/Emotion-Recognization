@@ -38,7 +38,14 @@ class NLP:
         return titles
     
     def mecab_news(self, data):
+        '''
+            - mecab_news() : csv에 있는 모든 문자열을 하나로 만드는 함수
 
+                - input parameter : (Data Frame)data
+                - output : 
+                    - txt file : title 과 contents의 상위빈도수 단어 모음
+                    - Dataframe : (빈도수,  단어)로 이루어진 데이터 프레임
+        '''
         # 형태소 분석기 불러오기
         mecab = Mecab()
 
