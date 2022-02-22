@@ -50,9 +50,11 @@ class emotion:
 
         #추출한 형태소 카운트
         count = Counter(news)
+        
+        cnt=len(count)//4
 
-        # 빈도가 높은 500개만 추출
-        data_list = count.most_common(500)
+        # 빈도가 높은 단어만 추출
+        data_list = count.most_common(cnt)
 
         #튜플 -> 딕셔너리
         data_li=dict((x,y)for x,y in data_list)
