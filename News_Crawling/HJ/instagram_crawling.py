@@ -1,14 +1,20 @@
 from selenium import webdriver 
 from bs4 import BeautifulSoup
 import pandas as pd
+import json
 import time 
 
 class Insta:
     def __init__(self):
+        
+        with open('./DATA/config.json','r') as in_file:
+            config = json.load(in_file)
+            username = config['instagram_username']
+            password = config['instagram_password']
 
         # 자동 로그인을 위한 정보     
-        self.username = "hxxeonx"
-        self.password = "stellar12!@"
+        self.username = username
+        self.password = password
 
         # setting 
         self.options = webdriver.ChromeOptions()
