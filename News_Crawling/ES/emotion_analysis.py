@@ -24,6 +24,7 @@ class Emotion_Analysis:
 
         # emotion dict
         self.word_list = []
+        self.total_word_df=pd.DataFrame(columns={"word","count"})
     
     def set_columns(self):
         '''
@@ -75,6 +76,9 @@ class Emotion_Analysis:
         '''
         content_tag() : 전체 감성분석 함수
                         -> news content의 형태소 분석
+                    input parameter : None
+                    output : word & freq dictionary(csv file)
+                            (frequency가 100미만인 단어는 제외, frequency 내림차순 정렬)
         '''
 
         # news data column 설정
@@ -117,16 +121,37 @@ class Emotion_Analysis:
         '''
 
         # 각 단어의 빈도수를 내림차순으로 저장
-        self.word_freq = Counter(self.word_list).most_common()
-        print('\nWord & Frequency')
-        print(self.word_freq)
+        self.count_items = Counter(self.word_list)
+        self.word_freq = self.count_items.most_common()
+        # print('\nWord & Frequency')
+        # print(self.word_freq)
+        # print('\n')
+
+        self.top_500 = self.count_items.most_common(n=500)
+        print('\n Top 500 frequency words')
+        print(self.top_500)
         print('\n')
+
+        # 튜플 형태를 딕셔너리로 바꾸기
+        self.word_freq_dict = dict((x, y) for x,y in self.word_freq if y>=100)
+        # print(self.word_freq_dict)
+        
 
         # 유니크한 단어가 몇개 나오는지 출력
-        print("\nThe number of Unique words :", len(np.unique(self.word_list)))
+        print("\nThe number of Unique words :", len(np.unique(self.word_freq)))
         print('\n')
+        # print("\nThe number of Unique words except freq 1 :", len(np.unique(self.word_freq_dict)))
+        # print('\n')
 
 
+        # 단어 csv로 저장
+        for key,value in (self.word_freq_dict.items()):
+            data={"word":key,"count":value}  
+            self.total_word_df=self.total_word_df.append(data,ignore_index=True)
+        
+        self.total_word_df=self.total_word_df[["word","count"]]
+        self.dataframe = pd.DataFrame(self.total_word_df)
+        self.dataframe.to_csv("[엔씨소프트]news_word_dictionary.csv",header=True,index=False)
 
 
 if __name__ == "__main__":
