@@ -50,7 +50,7 @@ class emotion:
 
         #추출한 형태소 카운트
         count = Counter(news)
-        
+
         cnt=len(count)//4
 
         # 빈도가 높은 단어만 추출
