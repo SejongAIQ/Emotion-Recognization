@@ -1,22 +1,21 @@
 import pandas as pd                             # For Data Management
-import matplotlib.pyplot as plt                 # For Data Visualization
-from konlpy.tag import Kkma                     # For Natural Language Processing
-from nltk import word_tokenize, sent_tokenize      
+import re                                       # For Text Processing
+from eunjeon import Mecab                       # For Natural Language Processing    
 from collections import Counter                 # For nouns counting 
-
-#nltk.download()
-
 
 class Sentiment_Lexicon:
     def __init__(self):
     
         # 형태소 분석기 선언 
-        self.kkma = Kkma()
+        self.mecab = Mecab()
 
+        # [ 임시 ] 불용어 
+        self.stopwords = ['기업', '금융', '언론사', '경제', '사업', '우편','종목','뉴스','지수']
         # [ 구축 예정 ] 불용어 사전 로드
-        stopwords = pd.read_csv("https://raw.githubusercontent.com/yoonkt200/FastCampusDataset/master/korean_stopwords.txt").values.tolist()
-        self.stop_words = set(x[0] for x in stopwords)
+        # stopwords = pd.read_csv("https://raw.githubusercontent.com/yoonkt200/FastCampusDataset/master/korean_stopwords.txt").values.tolist()
+        # self.stop_words = set(x[0] for x in stopwords)
 
+    ## 개별 데이터 취합 함수 ##
     def combining_news(self,News):
 
         '''
@@ -30,8 +29,10 @@ class Sentiment_Lexicon:
         for i in range(0,len(News)):
             combinated_news = combinated_news + " " + News['content'][i]
 
+        print("combination is done.")
         return combinated_news
 
+    ## 불용어 제거 함수 ##
     def stopwords_deletion(self, word_tokens):
         
         '''
@@ -47,68 +48,29 @@ class Sentiment_Lexicon:
             filtered_words.append(word_tokens)
 
         print("stop word filtering is done.")
-
-    def count_word(self, words):
-        
-        '''
-        count_word() : 명사 빈도 카운팅 함수 
-            input parameter : (list) word_list
-            output : 명사 빈도 출력 및 시각화 
-        '''
-
-        # 단어 빈도 카운트 
-        count = Counter(words)
-        # [ 출력 기준 필요 ] 최빈값 명사 100개 반환 
-        word_list = count.most_common(100)
-        # 최빈값 명사 100개 출력 
-        for word in word_list:
-            print(word)
-
-    def konlpy_test(self, combinated_news):
-
-        '''
-        konlpy_test() : konlpy 툴 테스트 함수 
-            input parameter : (String) combinated_news
-                stop word를 제거하기 위해 stopwords_deletion 함수 실행 
-                명사 빈도를 카운팅하기 위해 count_word 함수 실행 
-            output : 최빈값 명사 출력
-        '''
-
-        print(combinated_news)
-        # 명사 추출 
-        nouns = self.kkma.nouns(combinated_news)
-        # 한 글자 명사 제거 
-        for i,v in enumerate(nouns):
-            if len(v)<2:
-                nouns.pop(i)
-        print("extract nouns is done")
-
-        # stop word 제거 
-        #filtered_nouns = self.stopwords_deletion(nouns) 
-
-        # 명사 빈도 카운트 
-        self.count_word(nouns)       
     
-    def nltk_test(self, combinated_news):
-        
+    ## 텍스트 전처리 함수 ##
+    def text_processing(self, company ,combinated_news):
+
         '''
-        nltk_test() : nltk_test 툴 테스트 함수 
+        text_processing() : 텍스트 전처리 함수
             input parameter : (String) combinated_news
-            output : 최빈값 명사 출력 
+                (1) 특수문자 제거
+                (2) 기업명 제거 
+            output : 필요 없는 문자 일부 제거 
         '''
 
-        # 문장별로 단어 토큰화 
-        sentences = sent_tokenize(combinated_news)
-        # 분리된 문장별 단어 토큰화 
-        word_tokens = [ word_tokenize(sentences) for sentence in sentences ]
-        print(word_tokens)
+        # 특수문자 제거 
+        combinated_news = re.sub('[^가-힣a-z]', ' ', combinated_news)
+        # 기업명 제거 :: ex) 회사(은/는/이/가) | 회사(을/를) | 회사(다/이다) ?
+        processed_text = re.sub(f'[{company}]','', combinated_news)
 
-        # stop word 제거 
-        filtered_words = self.stopwords_deletion(word_tokens) 
+        #print("------remove is done.------")
+        #print(combinated_news)
 
-        # 단어 빈도 카운트 
-        self.count_word(filtered_words)
-    
+        return processed_text
+
+    ## 단어 추출 함수 ##
     def extract_nouns(self, code, company):
 
         '''
@@ -118,17 +80,48 @@ class Sentiment_Lexicon:
             output : 추출된 명사 리스트 반환  
         '''
 
-        # 해당 기업의 뉴스 데이터 로드 
+        # 단어 저장 리스트 
+        words = list()
+        # 단어 사전 DF 
+        lexicon = pd.DataFrame(columns=['morph','count'])
+
+        # 해당 기업의 뉴스 데이터 로드  
         News = pd.read_csv(f'C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/DATA/News/[{company}]news_data.csv', names = ['date','title','content'])
         # 해당 기업의 뉴스 데이터 취합 
         combinated_news = sentiment_lexicon.combining_news(News)
+        # 텍스트 전처리 함수 [특수문자, 기업명 제거]
+        processed_text = self.text_processing(company, combinated_news)
 
-        ### [ 1. konlpy 사용 ] ###
-        self.konlpy_test(combinated_news)
+        # 형태소 추출 
+        for token in self.mecab.pos(processed_text):
+            # 일반 명사, 고유 명사, 대명사, 동사, 형용사이면서 길이가 1이 아닌 경우,
+            # 불용어 제거 후, 리스트에 저장   
+            if token[1] in ['NNG', 'NNP', 'NP', 'VV','VA'] and token[0] not in self.stopwords and len(token[0]) > 1:
+                words.append(token[0])
 
-        ### [ 2. nltk 사용 ] ###
-        self.nltk_test(combinated_news)
-        
+        print(f'[{company}] list len :: {len(words)}')
+
+        # 빈도수 카운팅
+        morph_list = Counter(words).most_common()
+        #for m in morph_list:
+        #    print(m)
+
+        # 리스트를 df 형태로 변형 
+        morph_df = pd.DataFrame(morph_list, columns = ['dict','count'])
+        # 상위 25% 기준선 추출 
+        count_75 = (morph_df['count'].describe())['75%']
+        # 상위 25% 이하의 데이터 삭제 
+        drop_idx = morph_df[morph_df['count'] < count_75].index
+        lexicon = morph_df.drop(drop_idx)
+
+        print(lexicon)
+
+        # 최종 데이터 column 순서 정리 후, csv 파일로 저장 
+        lexicon = lexicon[["dict","count"]]                          
+        lexicon.to_csv(f"C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/DATA/lexicon/[{company}] lexicon_test.csv",header=False,index=False)
+
+        print(f"[{company}] extraction is done.")
+
     def load_data_by_sector(self):
 
         '''
