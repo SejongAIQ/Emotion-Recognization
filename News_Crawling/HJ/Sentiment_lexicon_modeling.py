@@ -1,7 +1,12 @@
+from contextlib import closing
 import pandas as pd                             # For Data Management
+import numpy as np                              # 
 import re                                       # For Text Processing
 from eunjeon import Mecab                       # For Natural Language Processing    
-from collections import Counter                 # For nouns counting 
+from collections import Counter
+from pymysql import NULL
+
+from sklearn import preprocessing                 # For nouns counting 
 
 class Sentiment_Lexicon:
     def __init__(self):
@@ -50,25 +55,33 @@ class Sentiment_Lexicon:
         print("stop word filtering is done.")
     
     ## 텍스트 전처리 함수 ##
-    def text_processing(self, company ,combinated_news):
+    def preprocessing(self, company, text, idx, process_code):
 
         '''
-        text_processing() : 텍스트 전처리 함수
-            input parameter : (String) combinated_news
+        preprocessing() : 텍스트 전처리 함수
+            input parameter : (String) text
                 (1) 특수문자 제거
                 (2) 기업명 제거 
-            output : 필요 없는 문자 일부 제거 
+                (3) NaN 데이터 처리 
+            output : 제거된 데이터 반환 
         '''
 
-        # 특수문자 제거 
-        combinated_news = re.sub('[^가-힣a-z]', ' ', combinated_news)
-        # 기업명 제거 :: ex) 회사(은/는/이/가) | 회사(을/를) | 회사(다/이다) ?
-        processed_text = re.sub(f'[{company}]','', combinated_news)
+        if process_code == 'News':
+            # 특수문자 제거 
+            text = re.sub('[^가-힣a-z]', ' ', text)
+            # 기업명 제거 :: ex) 회사(은/는/이/가) | 회사(을/를) | 회사(다/이다) ?
+            processed_text = re.sub(f'[{company}]','', text)
+            
+            return processed_text
 
         #print("------remove is done.------")
         #print(combinated_news)
-
-        return processed_text
+  
+        elif process_code == 'NaN':
+            # NaN label 데이터 처리 
+            for i in range(idx, len(text)):
+                if np.isnan(text[i]) == 0 :
+                    return text[i]
 
     ## 단어 추출 함수 ##
     def extract_nouns(self, code, company):
@@ -90,7 +103,7 @@ class Sentiment_Lexicon:
         # 해당 기업의 뉴스 데이터 취합 
         combinated_news = sentiment_lexicon.combining_news(News)
         # 텍스트 전처리 함수 [특수문자, 기업명 제거]
-        processed_text = self.text_processing(company, combinated_news)
+        processed_text = self.preprocessing(company, combinated_news, 0, 'News')
 
         # 형태소 추출 
         for token in self.mecab.pos(processed_text):
@@ -122,12 +135,48 @@ class Sentiment_Lexicon:
 
         print(f"[{company}] extraction is done.")
 
+    ## 휴장일과 시세 데이터 병합 함수 ##
+    def merge_closing_date_with_price(self, company):
+
+        '''
+        merge_closing_date_with_price() : 휴장일과 시세 데이터 병합 함수 
+            input parameter : (String) code 
+                ( 0: 시세 변동 없음, 1: 상승, -1: 하락, 999: 휴장 )
+            output : 휴장일과 시세 데이터 병합 완료 
+        '''
+
+        # 각 데이터 로드 
+        closing_day = pd.read_csv('C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/DATA/closing_day_ver2.csv',encoding='cp949')
+        closing_day = closing_day.rename(columns={'날짜':'date','요일':'day','휴일':'closing'})
+
+        price_labeling = pd.read_csv(f'C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/DATA/Price/[{company}] price_labeling.csv', names = ['date','price','label'])
+
+        # 날짜에 맞춰 데이터 병합 
+        merge_data = pd.merge(closing_day,price_labeling,how='outer')
+        merge_data.drop(columns=['day','price'],axis=1,inplace=True)
+
+        # NaN 값 보완 
+        # NaN :: 이후 가까운 라벨 값으로 대체 
+        # EX ) 토,일 -> 월 
+        for idx in range(len(merge_data)):
+            if np.isnan(merge_data['label'][idx]) :
+                merge_data['label'][idx] = self.preprocessing(company, merge_data['label'], idx, 'NaN')
+
+        # 최종 데이터 column 순서 정리 후, csv 파일로 저장
+        merge_data = merge_data[['date','label','closing']]
+        merge_data['label'] = merge_data['label'].astype(int)
+        merge_data.to_csv(f"C:/Users/user/OneDrive/바탕 화면/CODE/AIQ_pork/News_Crawling/HJ/DATA/lexicon/final_label/[{company}] final_label.csv",header=True,index=False)
+
+        print(f"[{company}]'s final_label is saved. ")
+
+    ## 섹터별 데이터 로드 함수 ##
     def load_data_by_sector(self):
 
         '''
         load_data_by_sector() : 섹터별 데이터 로드 함수 
             input parameter :
                 한 종목의 명사 추출을 위한 extract_nouns 함수 호출 
+                한 종목의 시세 데이터와 휴장일 병합을 위한 merge_closing_date_with_price 함수 호출 
             output : 전 종목의 명사 추출 완료
         '''
         
@@ -139,11 +188,14 @@ class Sentiment_Lexicon:
         # 전체 데이터 string으로 형 변환                    
         codes_list = codes_list.applymap(str) 
 
-        # 종목별 뉴스 데이터 명사 추출 실행 
+        # 종목별 뉴스 데이터 명사 추출 및 시세 데이터 병합 실행 
         for i in range(len(codes_list)):
             print(f"[{codes_list['code'][i]}] Start to Extract nouns ... " )
             # code 자리수 6개로 고정 
-            sentiment_lexicon.extract_nouns(codes_list['code'][i].zfill(6),codes_list['company'][i])
+            # sentiment_lexicon.extract_nouns(codes_list['code'][i].zfill(6),codes_list['company'][i])
+            # 해당 종목의 시세 데이터와 휴장일 병합 
+            sentiment_lexicon.merge_closing_date_with_price(codes_list['company'][i])
+            
             
 
 if __name__ == "__main__":
